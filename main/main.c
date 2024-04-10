@@ -29,7 +29,6 @@ void x_task(void *p) {
     int x_buffer[MOVING_AVERAGE_SIZE] = {0};
     int x_index = 0;
     adc_t x_read;
-    int sum;
     x_read.axis = 0; // define o canal 0 pro eixo x
 
     while (1) {
@@ -42,7 +41,7 @@ void x_task(void *p) {
         }
 
         // Atualiza a soma para calcular a média móvel
-        sum = 0;
+        int sum = 0;
         for (int i = 0; i < MOVING_AVERAGE_SIZE; i++) {
             sum += x_buffer[i];
         }
@@ -60,7 +59,6 @@ void y_task(void *p) {
     int y_buffer[MOVING_AVERAGE_SIZE] = {0};
     int y_index = 0;
     adc_t y_read;
-    int sum;
     y_read.axis = 1; // define o canal 1 pro eixo y
 
     while (1) {
@@ -73,7 +71,7 @@ void y_task(void *p) {
         }
 
         // Atualiza a soma para calcular a média móvel
-        sum = 0;
+        int sum = 0;
         for (int i = 0; i < MOVING_AVERAGE_SIZE; i++) {
             sum += y_buffer[i];
         }
