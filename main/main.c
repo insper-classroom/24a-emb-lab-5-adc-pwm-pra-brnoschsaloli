@@ -12,8 +12,27 @@
 
 uint const XPIN = 26;
 uint const YPIN = 27;
+const int BLUE_BTN = 20;
+const int RED_BTN = 21;
 
 QueueHandle_t xQueueAdc;
+QueueHandle_t xQueueBtn;
+
+void btn_callback(uint gpio, uint32_t events){
+    int red = 0;
+    int blue = 1;
+    if (events == 0x4){
+        if(gpio == RED_BTN){
+            xQueueSend(xQueueBtn, &red, portMAX_DELAY);  // Envia a leitura para a fila
+
+        }
+        else if(gpio == BLUE_BTN){
+            xQueueSend(xQueueBtn, &blue, portMAX_DELAY);  // Envia a leitura para a fila
+
+        } 
+    }
+}
+
 
 typedef struct adc {
     int axis;
@@ -105,6 +124,20 @@ void uart_task(void *p) {
     }
 }
 
+void btn_task(void *p) {
+    int btn;
+    adc_t data;
+
+    while (1) {
+        if (xQueueReceive(xQueueBtn, &btn, portMAX_DELAY)) {
+            data.axis = 2;
+            data.val = btn;
+            write(data);
+        }
+    }
+}
+
+
 int main() {
     stdio_init_all();
     adc_init();
@@ -112,11 +145,25 @@ int main() {
     adc_gpio_init(XPIN);
     adc_gpio_init(YPIN);
 
+    gpio_init(BLUE_BTN);
+    gpio_set_dir(BLUE_BTN, GPIO_IN);
+    gpio_pull_up(BLUE_BTN);
+
+    gpio_init(RED_BTN);
+    gpio_set_dir(RED_BTN, GPIO_IN);
+    gpio_pull_up(RED_BTN);
+
+    gpio_set_irq_enabled_with_callback(RED_BTN, GPIO_IRQ_EDGE_FALL, true, &btn_callback);
+    gpio_set_irq_enabled_with_callback(BLUE_BTN, GPIO_IRQ_EDGE_FALL, true, &btn_callback);
+
+
     xQueueAdc = xQueueCreate(32, sizeof(adc_t));
+    xQueueBtn = xQueueCreate(32, sizeof(adc_t));
 
     xTaskCreate(uart_task, "uart_task", 4096, NULL, 1, NULL);
     xTaskCreate(x_task, "x_task", 4096, NULL, 1, NULL);
     xTaskCreate(y_task, "y_task", 4096, NULL, 1, NULL);
+    xTaskCreate(btn_task, "btn_task", 4096, NULL, 1, NULL);
 
     vTaskStartScheduler();
 
